@@ -78,9 +78,16 @@ def validate_totem_api_key(api_key: str = Security(api_key_header_scheme)):
     """
     Dependencia para validar la API Key enviada por un Tótem.
     """
+    print("--- VALIDATING TOTEM API KEY ---")
+    print(f"--> Received Key: '{api_key}'")
+    print(f"--> Expected Key: '{settings.TOTEM_API_KEY}'")
+    
     if api_key != settings.TOTEM_API_KEY:
+        print("--- VALIDATION FAILED: Keys do not match. ---")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing API Key",
         )
+    
+    print("--- VALIDATION SUCCESS ---")
     return True
