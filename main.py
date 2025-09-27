@@ -76,46 +76,46 @@ def handle_mercadopago_connect(request: Request, db: Session = Depends(get_db)):
 
     # Intercambiar el código por credenciales
     TOKEN_URL = "https://api.mercadopago.com/oauth/token"
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json"
-        }
-        data = {
-            "client_id": settings.MP_APP_ID,
-            "client_secret": settings.MP_SECRET_KEY,
-            "code": code,
-            "redirect_uri": settings.MP_REDIRECT_URI,
-            "grant_type": "authorization_code"
-        }
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json"
+    }
+    data = {
+        "client_id": settings.MP_APP_ID,
+        "client_secret": settings.MP_SECRET_KEY,
+        "code": code,
+        "redirect_uri": settings.MP_REDIRECT_URI,
+        "grant_type": "authorization_code"
+    }
 
-        try:
-            response = requests.post(TOKEN_URL, headers=headers, data=data)
-            response.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
-            token_info = response.json()
+    try:
+        response = requests.post(TOKEN_URL, headers=headers, data=data)
+        response.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
+        token_info = response.json()
 
-            access_token = token_info.get("access_token")
-            refresh_token = token_info.get("refresh_token")
+        access_token = token_info.get("access_token")
+        refresh_token = token_info.get("refresh_token")
 
-            if not access_token or not refresh_token:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to obtain access or refresh token from Mercado Pago")
+        if not access_token or not refresh_token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to obtain access or refresh token from Mercado Pago")
 
-            # Guardar los tokens en la base de datos
-            crud.update_seller_mp_tokens(
-                db=db,
-                seller_id=int(seller_id),
-                access_token=access_token,
-                refresh_token=refresh_token
-            )
+        # Guardar los tokens en la base de datos
+        crud.update_seller_mp_tokens(
+            db=db,
+            seller_id=int(seller_id),
+            access_token=access_token,
+            refresh_token=refresh_token
+        )
 
-        except requests.exceptions.HTTPError as http_err:
-            # Loguear el error HTTP específico
-            print(f"HTTP error during token exchange: {http_err}")
-            print(f"Response content: {response.text}")
-            raise HTTPException(status_code=response.status_code, detail=f"Mercado Pago token exchange failed: {response.text}")
-        except Exception as e:
-            # Loguear cualquier otro error
-            print(f"An unexpected error occurred during token exchange: {e}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred: {e}")
+    except requests.exceptions.HTTPError as http_err:
+        # Loguear el error HTTP específico
+        print(f"HTTP error during token exchange: {http_err}")
+        print(f"Response content: {response.text}")
+        raise HTTPException(status_code=response.status_code, detail=f"Mercado Pago token exchange failed: {response.text}")
+    except Exception as e:
+        # Loguear cualquier otro error
+        print(f"An unexpected error occurred during token exchange: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred: {e}")
 
     # Redirigir a una página de éxito en el frontend (a futuro)
     # Por ahora, solo devolvemos un mensaje.
