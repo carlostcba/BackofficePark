@@ -118,8 +118,7 @@ def handle_mercadopago_connect(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred: {e}")
 
     # Redirigir a una página de éxito en el frontend (a futuro)
-    # Por ahora, solo devolvemos un mensaje.
-    return {"status": "success", "message": "Mercado Pago account connected successfully."}
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
 
 # --- Endpoints de Vistas (Frontend) ---
