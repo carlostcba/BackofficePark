@@ -121,6 +121,19 @@ def handle_mercadopago_connect(request: Request, db: Session = Depends(get_db)):
     return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
 
+@app.get("/mercadopago/disconnect", summary="Desconectar la cuenta de Mercado Pago del Vendedor")
+def disconnect_mercadopago(
+    db: Session = Depends(get_db),
+    current_user: schemas.Seller = Depends(security.get_current_user)
+):
+    """
+    Desconecta la cuenta de Mercado Pago del vendedor actualmente autenticado,
+    eliminando sus tokens de la base de datos.
+    """
+    crud.disconnect_seller_mp(db, seller_id=current_user.id)
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+
 # --- Endpoints de Vistas (Frontend) ---
 
 @app.get("/", summary="Página de Login")

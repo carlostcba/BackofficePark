@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             name: document.getElementById('user-name'),
             mpStatusBadge: document.getElementById('mp-status-badge'),
             connectMpButton: document.getElementById('connect-mp-button'),
+            disconnectMpButton: document.getElementById('disconnect-mp-button'),
         },
         totems: {
             tableBody: document.getElementById('totems-table-body'),
@@ -86,10 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.userInfo.mpStatusBadge.textContent = 'Conectado';
             elements.userInfo.mpStatusBadge.className = styles.badge.brand;
             elements.userInfo.connectMpButton.classList.add('hidden');
+            elements.userInfo.disconnectMpButton.classList.remove('hidden');
         } else {
             elements.userInfo.mpStatusBadge.textContent = 'No Conectado';
             elements.userInfo.mpStatusBadge.className = styles.badge.neutral;
             elements.userInfo.connectMpButton.classList.remove('hidden');
+            elements.userInfo.disconnectMpButton.classList.add('hidden');
         }
     }
 

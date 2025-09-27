@@ -75,6 +75,17 @@ def update_seller_mp_tokens(db: Session, seller_id: int, access_token: str, refr
         db.refresh(db_seller)
     return db_seller
 
+def disconnect_seller_mp(db: Session, seller_id: int):
+    db_seller = db.query(models.Seller).filter(models.Seller.id == seller_id).first()
+    if db_seller:
+        db_seller.mp_access_token = None
+        db_seller.mp_refresh_token = None
+        db_seller.mp_token_last_updated = None
+        db.add(db_seller)
+        db.commit()
+        db.refresh(db_seller)
+    return db_seller
+
 def delete_seller(db: Session, seller_id: int):
     db_seller = db.query(models.Seller).filter(models.Seller.id == seller_id).first()
     if db_seller:
