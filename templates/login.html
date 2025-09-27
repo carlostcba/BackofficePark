@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - OEM Totem Park Backoffice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#FF8E00',
+                        dark: {
+                            DEFAULT: '#2A2A2A',
+                            900: '#1C1C1C'
+                        },
+                        neutral: {
+                            100: '#F5F5F5',
+                            200: '#EEEEEE',
+                            300: '#E0E0E0'
+                        },
+                        'medium-gray': '#9E9E9E',
+                        danger: '#E53935',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-neutral-100 flex items-center justify-center">
+    <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-sm">
+        <div class="text-center mb-6">
+            <img src="/static/logo_oemspot.png" alt="Logo OemSpot" class="mx-auto h-12 w-auto">
+            <h2 class="mt-4 text-2xl font-bold text-dark-900">Backoffice Login</h2>
+            <p class="text-medium-gray">Inicia sesión para administrar tus tótems.</p>
+        </div>
+        
+        <div id="error-message" class="bg-danger/10 text-danger text-sm p-3 rounded-md mb-4 hidden"></div>
+
+        <form id="login-form" class="space-y-6">
+            <div>
+                <label for="username" class="block text-sm font-medium text-dark">Email</label>
+                <input type="email" id="username" name="username" required class="mt-1 block w-full border-medium-gray rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand focus:border-brand sm:text-sm">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-dark">Contraseña</label>
+                <input type="password" id="password" name="password" required class="mt-1 block w-full border-medium-gray rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand focus:border-brand sm:text-sm">
+            </div>
+            <button type="submit" class="w-full bg-brand text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:opacity-90 transition-opacity flex justify-center">Login</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessageDiv = document.getElementById('error-message');
+
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            try {
+                const response = await fetch('/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    window.location.href = '/dashboard';
+                } else {
+                    const errorData = await response.json();
+                    errorMessageDiv.textContent = errorData.detail || 'Error de autenticación.';
+                    errorMessageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorMessageDiv.textContent = 'No se pudo conectar con el servidor.';
+                errorMessageDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

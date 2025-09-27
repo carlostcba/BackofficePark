@@ -1,0 +1,41 @@
+/* Base styles and custom components that complement Tailwind */
+
+:root {
+    --brand-color: #FF8E00;
+}
+
+body {
+    background-color: #F5F5F5; /* neutral-100 */
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    transform: translateX(150%);
+    opacity: 0;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    z-index: 50;
+}
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* Skeleton Loading */
+.skeleton {
+    background-color: #e2e8f0; /* gray-200 */
+    border-radius: 0.25rem;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: .5;
+    }
+}

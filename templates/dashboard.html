@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - OEM Totem Park</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#FF8E00',
+                        dark: {
+                            DEFAULT: '#2A2A2A',
+                            900: '#1C1C1C'
+                        },
+                        neutral: {
+                            100: '#F5F5F5',
+                            200: '#EEEEEE',
+                            300: '#E0E0E0'
+                        },
+                        'medium-gray': '#9E9E9E',
+                        danger: '#E53935',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="h-full bg-neutral-100 text-dark-900">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="pb-5 border-b border-neutral-200 flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <img src="/static/logo_oemspot.png" alt="Logo OemSpot" class="h-10 w-auto">
+                <h1 class="text-2xl font-bold text-dark-900">Dashboard</h1>
+            </div>
+            <button id="logout-button" class="bg-white text-dark font-semibold py-2 px-4 rounded-md border border-dark hover:bg-neutral-100 transition-colors">Cerrar Sesión</button>
+        </header>
+
+        <!-- User Info Section -->
+        <section id="user-info-section" class="bg-white shadow-sm rounded-lg p-6 mb-8">
+            <!-- Skeleton Loader -->
+            <div id="user-info-skeleton">
+                <div class="h-6 w-1/2 skeleton mb-4"></div>
+                <div class="h-5 w-1/3 skeleton"></div>
+            </div>
+            <!-- Actual Content -->
+            <div id="user-info-content" class="hidden">
+                <h2 class="text-xl font-semibold text-dark">Bienvenido, <span id="user-name"></span></h2>
+                <div class="flex items-center gap-4 mt-2">
+                    <p class="text-dark">Estado de Mercado Pago:</p>
+                    <span id="mp-status-badge"></span>
+                    <button id="connect-mp-button" class="bg-brand text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:opacity-90 transition-opacity hidden">Conectar con Mercado Pago</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Totems Section -->
+        <section id="totems-section">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-dark">Tus Tótems</h3>
+                <button id="add-totem-button" class="bg-brand text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:opacity-90 transition-opacity">Añadir Tótem</button>
+            </div>
+            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-neutral-200">
+                    <thead class="bg-neutral-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">ID Externo</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">Ubicación</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">Estado</th>
+                            <th scope="col" class="relative px-6 py-3">
+                                <span class="sr-only">Acciones</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="totems-table-body" class="bg-white divide-y divide-neutral-200">
+                        <!-- JS will populate this -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Transactions Section -->
+        <section id="transactions-section" class="mt-12">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-dark">Historial de Transacciones</h3>
+            </div>
+            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-neutral-200">
+                    <thead class="bg-neutral-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">ID Pago</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">Tótem</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">Monto</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">Fecha</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-medium-gray uppercase tracking-wider">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-table-body" class="bg-white divide-y divide-neutral-200">
+                        <!-- JS will populate this -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Totem Modal -->
+    <div id="totem-modal" role="dialog" aria-modal="true" aria-labelledby="totem-modal-title" class="fixed inset-0 z-10 overflow-y-auto hidden">
+        <div class="flex items-center justify-center min-h-screen">
+            <!-- Backdrop -->
+            <div id="modal-backdrop" class="fixed inset-0 bg-dark-900 bg-opacity-75 modal-backdrop"></div>
+            
+            <!-- Modal Panel -->
+            <div class="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4">
+                <form id="totem-form">
+                    <input type="hidden" id="totem-id">
+                    <h3 id="totem-modal-title" class="text-lg font-medium leading-6 text-dark-900 mb-4">Añadir Tótem</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="external_pos_id" class="block text-sm font-medium text-dark">ID Externo del Tótem</label>
+                            <input type="text" id="external_pos_id" required class="mt-1 block w-full border-medium-gray rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand focus:border-brand sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="location" class="block text-sm font-medium text-dark">Ubicación</label>
+                            <input type="text" id="location" class="mt-1 block w-full border-medium-gray rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand focus:border-brand sm:text-sm">
+                        </div>
+                        <div class="flex items-center">
+                            <input id="is_active" type="checkbox" class="h-4 w-4 text-brand focus:ring-brand border-medium-gray rounded">
+                            <label for="is_active" class="ml-2 block text-sm text-dark-900">Activo</label>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" id="cancel-totem-button" class="bg-white text-dark font-semibold py-2 px-4 rounded-md border border-dark hover:bg-neutral-100 transition-colors">Cancelar</button>
+                        <button type="submit" class="bg-brand text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:opacity-90 transition-opacity">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
