@@ -5,9 +5,9 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from . import schemas, crud
-from .database import SessionLocal
-from .settings import settings
+import schemas, crud
+from database import SessionLocal
+from settings import settings
 
 # --- Configuración de Seguridad ---
 

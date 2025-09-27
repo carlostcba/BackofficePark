@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session, selectinload
 from datetime import datetime
 import mercadopago
 
-from . import models, schemas, security
-from .settings import settings
+import models, schemas, security
+from settings import settings
 
 # --- Funciones de Refresco de Token ---
 
