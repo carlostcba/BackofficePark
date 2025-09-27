@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     MP_SECRET_KEY: str = ""
     MP_REDIRECT_URI: str = "https://127.0.0.1:8000/mercadopago/connect" # Default para desarrollo
 
+    # Clave de API para la comunicación entre el tótem y el backoffice
+    TOTEM_API_KEY: str = secrets.token_hex(32)
+
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env")
 
 
