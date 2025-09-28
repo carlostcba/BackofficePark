@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 from datetime import timedelta, datetime, timezone
 import mercadopago
@@ -160,25 +161,38 @@ def get_mp_token_for_totem(
     Refresca el token proactivamente si está a punto de expirar.
     Requiere autenticación por API Key (Header: X-API-Key).
     """
-    db_totem = crud.get_totem_by_external_id(db, external_pos_id=external_pos_id)
-    if not db_totem:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Totem not found")
-    
-    seller = db_totem.owner
-    if not seller:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Totem has no owner")
+    try:
+        db_totem = crud.get_totem_by_external_id(db, external_pos_id=external_pos_id)
+        if not db_totem:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Totem not found")
+        
+        seller = db_totem.owner
+        if not seller:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Totem has no owner")
 
-    if not seller.mp_access_token or not seller.mp_refresh_token or not seller.mp_token_last_updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Owner has not connected or configured their Mercado Pago account")
+        if not seller.mp_access_token or not seller.mp_refresh_token or not seller.mp_token_last_updated:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Owner has not connected or configured their Mercado Pago account")
 
-    # Comprobar si el token está "vencido" y necesita refrescarse
-    token_age = (datetime.now(timezone.utc) - seller.mp_token_last_updated.replace(tzinfo=timezone.utc)).total_seconds()
-    
-    refreshed_seller = seller
-    if token_age > TOKEN_STALE_THRESHOLD_SECONDS:
-        refreshed_seller = crud.refresh_seller_tokens(db, seller=seller)
+        # Comprobar si el token está "vencido" y necesita refrescarse
+        token_age = (datetime.now(timezone.utc) - seller.mp_token_last_updated.replace(tzinfo=timezone.utc)).total_seconds()
+        
+        refreshed_seller = seller
+        if token_age > TOKEN_STALE_THRESHOLD_SECONDS:
+            refreshed_seller = crud.refresh_seller_tokens(db, seller=seller)
 
-    return {"mp_access_token": refreshed_seller.mp_access_token}
+        return {"mp_access_token": refreshed_seller.mp_access_token}
+    except SQLAlchemyError as e:
+        # Aquí podrías loguear el error `e` si lo necesitas
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Error de conexión con la base de datos. El servicio no está disponible."
+        )
+    except Exception as e:
+        # Captura cualquier otro error inesperado para evitar un crash
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ocurrió un error interno inesperado: {e}"
+        )
 
 
 # --- Endpoints de Autenticación ---
