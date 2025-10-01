@@ -91,3 +91,15 @@ def validate_totem_api_key(api_key: str = Security(api_key_header_scheme)):
     
     print("--- VALIDATION SUCCESS ---")
     return True
+
+def require_admin_user(current_user: schemas.Seller = Depends(get_current_user)):
+    """
+    Dependencia de FastAPI que verifica si el usuario actual tiene el rol de 'admin'.
+    Si no lo es, lanza una excepción HTTP 403 Forbidden.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operation not permitted. Admin privileges required."
+        )
+    return current_user
