@@ -1,239 +1,122 @@
-# Back-Office API para OEM Totem Park
+# Backoffice para OEM Totem Park
 
 ## 1. Descripción General
 
-Esta aplicación es un backend desarrollado en **FastAPI** que sirve como sistema de gestión central para la plataforma OEM Totem Park. Proporciona una API RESTful para administrar vendedores (propietarios de estacionamientos) y sus tótems, además de manejar la integración y autenticación con Mercado Pago.
+Este proyecto es el **backend central** para el sistema de tótems de estacionamiento. Es una aplicación web construida con **FastAPI** que actúa como el cerebro del ecosistema, gestionando vendedores, tótems y la integración con Mercado Pago.
 
-El proyecto también incluye un dashboard web simple (frontend) para que los vendedores puedan gestionar sus recursos.
+Su propósito es centralizar la lógica de negocio, la autenticación y la configuración, permitiendo que las aplicaciones de los tótems (`totem_app`) sean clientes ligeros y fáciles de gestionar.
 
 ---
 
 ## 2. Características Principales
 
-- **Gestión de Vendedores:** Sistema de autenticación basado en JWT (login/logout) y registro de nuevos vendedores.
-- **Gestión de Tótems (CRUD):** Endpoints para crear, leer, actualizar y eliminar tótems, asociándolos a un vendedor.
-- **Integración con Mercado Pago:** Flujo de conexión OAuth2 para que los vendedores vinculen sus cuentas de Mercado Pago de forma segura.
-- **API para Tótems:** Un endpoint seguro (`/api/v1/totems/token/{external_pos_id}`) para que los tótems físicos obtengan el token de acceso de su vendedor y puedan procesar pagos.
-- **Auto-Refresco de Tokens:** Lógica para refrescar automáticamente los tokens de Mercado Pago que están a punto de expirar.
-- **Dashboard Web:** Una interfaz de usuario desarrollada con HTML, CSS (Tailwind) y JavaScript para la gestión visual de la plataforma.
-- **Documentación Automática:** Documentación interactiva de la API (generada por Swagger UI y ReDoc) disponible en los endpoints `/docs` y `/redoc`.
+- **API REST Moderna:** Construida con FastAPI, ofrece una API rápida, segura y con documentación automática (Swagger UI).
+- **Gestión Multi-Vendedor:** Diseñada desde cero para soportar múltiples vendedores (estacionamientos), cada uno con sus propios tótems.
+- **Sistema de Roles:** Incluye roles de `admin` y `seller`, permitiendo una gestión jerárquica de la plataforma.
+- **Autenticación Segura:** Utiliza tokens JWT (OAuth2) para proteger los endpoints y gestionar las sesiones de los usuarios en el dashboard.
+- **Conexión Segura con Mercado Pago:** Provee un flujo OAuth2 completo para que los vendedores puedan conectar sus cuentas de Mercado Pago de forma segura y remota, sin compartir credenciales.
+- **Gestión Centralizada de Tokens:** Almacena y gestiona de forma segura los `access_token` y `refresh_token` de cada vendedor en una base de datos central.
+- **Auto-Refresco de Tokens:** Incluye una lógica proactiva que renueva automáticamente los tokens de Mercado Pago antes de que expiren, garantizando la operación continua del sistema.
+- **API para Tótems:** Expone un endpoint seguro (`/api/v1/totems/token/{external_pos_id}`) para que los tótems soliciten las credenciales de pago que necesitan para operar.
+- **Receptor de Webhooks:** Preparado para recibir notificaciones de pago en tiempo real desde Mercado Pago, validando la autenticidad de cada petición.
+- **Dashboard Web:** Incluye una interfaz web simple (servida con Jinja2) para que los vendedores y administradores puedan gestionar sus cuentas, tótems y ver el historial de pagos.
 
 ---
 
-## 3. Instalación y Puesta en Marcha (Desarrollo Local)
+## 3. Arquitectura y Tecnologías
 
-Sigue estos pasos para levantar el entorno de desarrollo local.
-
-### 3.1. Prerrequisitos
-
-- Python 3.10+
-- Un cliente de base de datos MySQL (o SQLite para desarrollo).
-
-### 3.2. Instalación
-
-1.  **Clona el repositorio** (si aún no lo has hecho).
-
-2.  **Navega al directorio del back-office**:
-    ```sh
-    cd backoffice_app
-    ```
-
-3.  **Crea y activa un entorno virtual**:
-    ```sh
-    # En Windows
-    python -m venv venv
-    .\venv\Scripts\activate
-
-    # En macOS/Linux
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-
-4.  **Instala las dependencias**:
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-### 3.3. Configuración
-
-1.  La configuración de la aplicación se gestiona en el archivo `settings.py`, que a su vez lee variables de entorno.
-2.  Crea un archivo `.env` en la raíz de `/backoffice_app` (puedes copiar y renombrar `.env.example` si existe).
-3.  Rellena las variables de entorno necesarias, especialmente las credenciales de la base de datos y las claves de la API de Mercado Pago.
-
-### 3.4. Ejecutar la Aplicación
-
-Una vez que el entorno esté configurado, ejecuta el servidor con Uvicorn:
-
-```sh
-uvicorn main:app --reload
-```
-
-- `--reload`: Hace que el servidor se reinicie automáticamente cada vez que detecta un cambio en el código.
-
-La aplicación estará disponible en **http://127.0.0.1:8000**.
+- **Framework:** FastAPI
+- **Base de Datos:** SQLAlchemy con soporte para MySQL (producción) y SQLite (desarrollo).
+- **Autenticación:** Passlib (para hashing de contraseñas) y python-jose (para JWT).
+- **Servidor:** Uvicorn.
+- **Contenedorización:** Diseñado para ser desplegado fácilmente con Docker.
 
 ---
 
-## 4. Uso del Dashboard
+## 4. Instalación y Puesta en Marcha (Producción en Ubuntu)
 
-1.  **Accede al Login:** Navega a `http://127.0.0.1:8000/`.
-2.  **Crea una cuenta:** Si no tienes un usuario, puedes crear uno enviando una petición POST al endpoint `/sellers/` (puedes usar una herramienta como Postman, Insomnia o `curl`).
-3.  **Inicia Sesión:** Usa las credenciales creadas para acceder al dashboard.
-4.  **Conecta Mercado Pago:** Dentro del dashboard, si tu cuenta no está vinculada, verás un botón para conectar con Mercado Pago. Sigue el flujo para autorizar la aplicación.
-5.  **Gestiona tus Tótems:** Una vez conectado, podrás añadir, editar y eliminar tus tótems desde la tabla correspondiente.
+Sigue estos pasos para desplegar el backoffice en un servidor Ubuntu.
 
----
+### Paso 1: Preparar el Servidor
 
-## 5. Despliegue en Servidor Ubuntu (Producción)
-
-Esta sección detalla los pasos para desplegar la aplicación en un servidor Ubuntu 24.04 LTS con MySQL 8.4.x y ejecutarla como un servicio `systemd`.
-
-### 5.1. Prerrequisitos del Servidor
-
-- Servidor con Ubuntu 24.04 LTS (Noble Numbat).
-- Acceso `sudo`.
-- Git instalado.
-
-### 5.2. Instalación de MySQL 8.4.x
-
-1.  **Purgar cualquier instalación de MySQL existente (si la hay):**
+1.  **Instalar dependencias del sistema:**
     ```bash
-    sudo systemctl stop mysql
-    sudo apt-get purge mysql-server mysql-client mysql-common mysql-server-core-* mysql-client-core-*
-    sudo apt-get autoremove
-    sudo apt-get autoclean
+    sudo apt update
+    sudo apt install -y python3-venv python3-pip mysql-server
     ```
+2.  **Instalar MySQL 8.4 (si es necesario):**
+    Si la versión por defecto no es la 8.4, sigue los pasos detallados para instalarla desde los repositorios oficiales de MySQL. Esto puede implicar descargar el paquete `mysql-apt-config`, seleccionar la versión y ajustar las fuentes del repositorio si usas una versión de Ubuntu no-LTS.
 
-2.  **Instalar MySQL 8.4.x:**
-    *   **Descarga el Repositorio Oficial de MySQL:**
-        ```bash
-        wget https://dev.mysql.com/get/mysql-apt-config_0.8.34-1_all.deb
-        ```
-    *   **Instala el Paquete de Configuración:**
-        ```bash
-        sudo dpkg -i mysql-apt-config_0.8.34-1_all.deb
-        ```
-    *   **Selecciona la Versión de MySQL (en la pantalla azul):**
-        *   En la pantalla azul, selecciona **"MySQL Server & Cluster"** y presiona `Enter`.
-        *   Luego, selecciona **`mysql-8.4`** y presiona `Enter`.
-        *   Finalmente, selecciona **"Ok"** y presiona `Enter`.
-    *   **Corrige el Repositorio para Ubuntu "Noble" (24.04 LTS):**
-        *   Abre el archivo de configuración:
-            ```bash
-            sudo nano /etc/apt/sources.list.d/mysql.list
-            ```
-        *   En todas las líneas donde veas la palabra `noble`, **reemplázala por `jammy`**.
-        *   Guarda y cierra el archivo (`Ctrl+X`, `Y`, `Enter`).
-    *   **Instala la dependencia `libaio1` manualmente:**
-        ```bash
-        wget http://archive.ubuntu.com/ubuntu/pool/main/liba/libaio/libaio1_0.3.112-13build1_amd64.deb
-        sudo dpkg -i libaio1_0.3.112-13build1_amd64.deb
-        # Si hay errores de dependencias, intenta:
-        # sudo apt --fix-broken install
-        ```
-    *   **Actualiza los Repositorios e Instala `mysql-server`:**
-        ```bash
-        sudo apt update
-        sudo apt install -y mysql-server
-        ```
-
-3.  **Verificar la Versión Instalada:**
-    ```bash
-    mysql --version
-    ```
-    Debería mostrar `8.4.x`.
-
-4.  **Configurar y Asegurar MySQL:**
+3.  **Configurar y asegurar MySQL:**
     ```bash
     sudo mysql_secure_installation
     ```
-    (Sigue las instrucciones para establecer la contraseña de root y opciones de seguridad).
-
-    Ahora, crea la base de datos y el usuario para la aplicación:
-    ```bash
-    sudo mysql
-    # Dentro de la consola de MySQL, ejecuta:
+    Luego, crea la base de datos y el usuario para la aplicación:
+    ```sql
     CREATE DATABASE oem_backoffice;
-    CREATE USER 'oem_user'@'localhost' IDENTIFIED BY 'Oem2017*';
+    CREATE USER 'oem_user'@'localhost' IDENTIFIED BY 'tu_contraseña_segura';
     GRANT ALL PRIVILEGES ON oem_backoffice.* TO 'oem_user'@'localhost';
     FLUSH PRIVILEGES;
     EXIT;
     ```
 
-### 5.3. Despliegue de la Aplicación
+### Paso 2: Desplegar la Aplicación
 
-1.  **Clonar el Repositorio:**
+1.  **Clonar el repositorio:**
     ```bash
-    # Navega a la ubicación deseada en tu servidor (ej. /home/tu_usuario/)
-    git clone https://github.com/carlostcba/TotemPark.git
-    cd TotemPark
+    git clone <URL_DE_TU_REPOSITORIO> OemTotemPark
+    cd OemTotemPark/backoffice_app
     ```
-
-2.  **Crear Entorno Virtual e Instalar Dependencias:**
+2.  **Crear y activar el entorno virtual:**
     ```bash
     python3 -m venv venv
     source venv/bin/activate
+    ```
+3.  **Instalar dependencias de Python:**
+    ```bash
     pip install -r requirements.txt
     ```
 
-3.  **Configurar el Archivo `.env` de Producción:**
-    *   Crea el archivo `backoffice_app/.env` con el siguiente contenido. **Rellena los valores con tus datos de producción.**
+### Paso 3: Configurar las Variables de Entorno
+
+1.  **Crear el archivo `.env`** dentro de la carpeta `backoffice_app`:
+    ```bash
+    nano .env
+    ```
+2.  **Añadir la configuración de producción:**
     ```ini
-    # --- Base de Datos de Producción ---
+    # URL de la base de datos de producción
     DATABASE_URL="mysql+mysqlconnector://oem_user:tu_contraseña_segura@localhost/oem_backoffice"
 
-    # --- Credenciales de Mercado Pago (Producción) ---
-    MP_APP_ID="1057832979253760"
-    MP_SECRET_KEY="yr3BZpEzW01jNXBl8K9HtjrQVDCT5KHs"
+    # Credenciales de tu aplicación de Mercado Pago
+    MP_APP_ID="TU_APP_ID"
+    MP_SECRET_KEY="TU_SECRET_KEY"
+    MP_WEBHOOK_SECRET="TU_WEBHOOK_SECRET"
 
-    # --- URL de Redirección Permanente ---
+    # URL pública de tu backoffice para la redirección de OAuth
     MP_REDIRECT_URI="https://backoffice.oemspot.com.ar/mercadopago/connect"
 
-    # --- Clave de Seguridad (Genera una nueva para producción) ---
-    SECRET_KEY="9706d7d7090e107dd87f7283ff5a7f8039074b39c6050cd6f77450529db861bc"
+    # Claves de seguridad (generar con `openssl rand -hex 32`)
+    SECRET_KEY="UNA_CLAVE_SECRETA_PARA_JWT"
+    TOTEM_API_KEY="UNA_CLAVE_SECRETA_PARA_LA_API_DE_TOTEMS"
     ```
 
-4.  **Actualizar el Panel de Mercado Pago:**
-    *   Ve a la configuración de tu aplicación en Mercado Pago y en "URLs de redireccionamiento", pon la URL definitiva: `https://backoffice.oemspot.com.ar/mercadopago/connect`.
+### Paso 4: Ejecutar la Aplicación
 
-### 5.4. Ejecutar como un Servicio Permanente (systemd)
+Para pruebas, puedes ejecutarla directamente:
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
 
-Para que la aplicación se ejecute siempre, incluso si el servidor se reinicia, la configuraremos como un servicio del sistema.
+Para producción, se recomienda configurarla como un servicio `systemd` y usar un reverse proxy como Nginx para gestionar el tráfico y los certificados SSL.
 
-1.  **Crea el archivo de servicio:**
-    ```bash
-    sudo nano /etc/systemd/system/oem-backoffice.service
-    ```
+---
 
-2.  **Pega el siguiente contenido dentro del editor.** Asegúrate de cambiar `/ruta/absoluta/a/OemTotemPark` por la ruta real donde clonaste el proyecto y `tu_usuario_de_ubuntu` por tu nombre de usuario en Ubuntu.
-    ```ini
-    [Unit]
-    Description=OEM Totem Park Backoffice Service
-    After=network.target
+## 5. Uso de la API
 
-    [Service]
-    User=tu_usuario_de_ubuntu  # Cambia esto por tu nombre de usuario en Ubuntu
-    Group=www-data
-    WorkingDirectory=/ruta/absoluta/a/OemTotemPark/backoffice_app
-    ExecStart=/ruta/absoluta/a/OemTotemPark/backoffice_app/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
-    Restart=always
-    RestartSec=10
+Una vez que el servidor está en marcha, puedes acceder a la documentación interactiva en `http://tu_servidor:8000/docs` para probar todos los endpoints.
 
-    [Install]
-    WantedBy=multi-user.target
-    ```
-    *   Guarda y cierra el archivo (`Ctrl+X`, `Y`, `Enter`).
-
-3.  **Activa y arranca el servicio:**
-    ```bash
-    sudo systemctl daemon-reload
-    sudo systemctl enable oem-backoffice.service
-    sudo systemctl start oem-backoffice.service
-    ```
-
-4.  **Verifica el estado para asegurarte de que todo está corriendo sin errores:**
-    ```bash
-    sudo systemctl status oem-backoffice.service
-    ```
-
-¡Y listo! Con estos pasos, tu aplicación estará corriendo en producción de forma robusta y permanente, servida a través de tu proxy en la URL `https://backoffice.oemspot.com.ar`.
+1.  **Crea un Vendedor (Admin):** Usa `POST /api/v1/admin/sellers` para crear la primera cuenta de vendedor (y asignarle el rol de `admin`).
+2.  **Inicia Sesión:** Usa `POST /token` para obtener un token de acceso.
+3.  **Autoriza:** Usa el botón "Authorize" en la documentación para usar tu token en las peticiones protegidas.
+4.  **Gestiona:** Ahora puedes usar el resto de los endpoints para gestionar tótems y vendedores.

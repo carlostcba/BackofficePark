@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, selectinload
 from datetime import datetime
+import logging
 import mercadopago
 
 import models, schemas, security
@@ -136,3 +137,66 @@ def delete_totem(db: Session, totem_id: int):
         db.delete(db_totem)
         db.commit()
     return db_totem
+
+def get_payments_by_seller(db: Session, seller_id: int, skip: int = 0, limit: int = 20):
+    """
+    Obtiene los pagos de un vendedor específico, ordenados por fecha descendente.
+    """
+    return db.query(models.Payment)\
+        .filter(models.Payment.seller_id == seller_id)\
+        .order_by(models.Payment.payment_time.desc())\
+        .offset(skip).limit(limit).all()
+
+def create_parking_events(db: Session, events: list[schemas.ParkingEventCreate]):
+    # Esta función podría ser más compleja, manejando duplicados, etc.
+    # Por ahora, simplemente los crea.
+    for event_data in events:
+        db_event = models.ParkingEvent(**event_data.model_dump())
+        db.add(db_event)
+    db.commit()
+    return
+
+def process_payment_notification(db: Session, payment_id: str):
+    """
+    Obtiene los detalles de un pago de MP y lo guarda en la BD del backoffice.
+    """
+    try:
+        # Usamos el token del marketplace para poder ver todos los pagos
+        sdk = mercadopago.SDK(settings.MP_SECRET_KEY) # Asumiendo que el secret es el access token del marketplace
+        payment_info = sdk.payment().get(payment_id)
+
+        if payment_info["status"] != 200:
+            logging.error(f"No se pudo obtener el detalle del pago {payment_id} desde Mercado Pago.")
+            return
+
+        payment = payment_info["response"]
+        
+        # Parsear la referencia externa para obtener ticket y pos_id
+        external_reference = payment.get("external_reference", "")
+        parts = external_reference.split('-')
+        ticket_code = parts[0] if parts else None
+        external_pos_id = parts[1] if len(parts) > 1 else None
+
+        # Encontrar al vendedor a través del tótem
+        seller_id = None
+        if external_pos_id:
+            totem = get_totem_by_external_id(db, external_pos_id)
+            if totem:
+                seller_id = totem.owner_id
+
+        db_payment = models.Payment(
+            mp_payment_id=str(payment["id"]),
+            ticket_code=ticket_code,
+            external_pos_id=external_pos_id,
+            amount=payment["transaction_amount"],
+            status=payment["status"],
+            payment_time=datetime.fromisoformat(payment["date_approved"]),
+            seller_id=seller_id
+        )
+        db.add(db_payment)
+        db.commit()
+        logging.info(f"Pago {payment_id} procesado y guardado en la base de datos del backoffice.")
+
+    except Exception as e:
+        logging.error(f"Error procesando la notificación de pago {payment_id}: {e}")
+        db.rollback()

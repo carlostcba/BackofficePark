@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean, Float
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -10,6 +10,7 @@ class Seller(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    role = Column(String(20), nullable=False, server_default="seller") # 'seller' o 'admin'
     
     # Credenciales de Mercado Pago
     mp_access_token = Column(String(255), nullable=True)
@@ -19,6 +20,22 @@ class Seller(Base):
     # Timestamps
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mp_payment_id = Column(String(50), unique=True, index=True, nullable=False)
+    ticket_code = Column(String(20), index=True, nullable=True)
+    external_pos_id = Column(String(50), index=True, nullable=True)
+    amount = Column(Float, nullable=False)
+    status = Column(String(20), nullable=False)
+    payment_time = Column(DateTime, nullable=False)
+    
+    seller_id = Column(Integer, ForeignKey("sellers.id"))
+
+    created_at = Column(DateTime, server_default=func.now())
 
     # Relación con Totems
     totems = relationship("Totem", back_populates="owner")

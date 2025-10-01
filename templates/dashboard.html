@@ -149,6 +149,45 @@
         </div>
     </div>
 
+    <!-- Seller Modal -->
+    <div id="seller-modal" role="dialog" aria-modal="true" class="modal hidden">
+        <div class="modal-content">
+            <div id="seller-modal-backdrop" class="modal-backdrop"></div>
+            <div class="modal-panel">
+                <form id="seller-form">
+                    <input type="hidden" id="seller-id">
+                    <h3 id="seller-modal-title" class="text-lg font-medium text-gray-900 mb-4">Añadir Vendedor</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="seller-name" class="block text-sm font-medium text-gray-700">Nombre</label>
+                            <input type="text" id="seller-name" required class="input">
+                        </div>
+                        <div>
+                            <label for="seller-email" class="block text-sm font-medium text-gray-700">Email</label>
+                            <input type="email" id="seller-email" required class="input">
+                        </div>
+                        <div>
+                            <label for="seller-password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                            <input type="password" id="seller-password" class="input">
+                            <p id="password-help" class="text-xs text-gray-500 mt-1">Dejar en blanco para no cambiar la contraseña existente.</p>
+                        </div>
+                        <div>
+                            <label for="seller-role" class="block text-sm font-medium text-gray-700">Rol</label>
+                            <select id="seller-role" class="input">
+                                <option value="seller">Vendedor</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" id="cancel-seller-button" class="btn btn--secondary">Cancelar</button>
+                        <button type="submit" class="btn btn--primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/dashboard.js"></script>
 </body>
 </html>

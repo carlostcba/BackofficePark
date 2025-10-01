@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Variables para MercadoPago
     MP_APP_ID: str = ""
     MP_SECRET_KEY: str = ""
+    MP_WEBHOOK_SECRET: str = ""
     MP_REDIRECT_URI: str = "https://127.0.0.1:8000/mercadopago/connect" # Default para desarrollo
 
     # Clave de API para la comunicación entre el tótem y el backoffice

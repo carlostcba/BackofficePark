@@ -17,6 +17,7 @@ class TokenData(BaseModel):
 class SellerBase(BaseModel):
     name: str
     email: EmailStr
+    role: Optional[str] = "seller"
 
 # Schema para la creación de un Vendedor (lo que la API espera en un POST)
 class SellerCreate(SellerBase):
@@ -45,6 +46,7 @@ class Totem(BaseModel):
 class Seller(SellerBase):
     id: int
     mp_access_token: Optional[str] = None # Para verificar el estado de conexión en el frontend
+    role: str
     created_at: datetime
     updated_at: datetime
     totems: List[Totem] = [] # Lista de tótems asociados
@@ -70,3 +72,39 @@ class TotemUpdate(BaseModel):
     owner_id: Optional[int] = None
 
 # El schema Totem ya está definido arriba para la forward declaration
+
+# --- Schemas para Payment ---
+
+class PaymentBase(BaseModel):
+    mp_payment_id: str
+    ticket_code: Optional[str] = None
+    external_pos_id: Optional[str] = None
+    amount: float
+    status: str
+    payment_time: datetime
+
+class Payment(PaymentBase):
+    id: int
+    seller_id: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# --- Schemas para ParkingEvent ---
+
+class ParkingEventBase(BaseModel):
+    ticket_code: str
+    device_id: int
+    event_type: str
+    event_time: datetime
+
+class ParkingEventCreate(ParkingEventBase):
+    pass
+
+class ParkingEvent(ParkingEventBase):
+    id: int
+
+    class Config:
+        from_attributes = True

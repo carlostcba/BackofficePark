@@ -8,6 +8,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 from datetime import timedelta, datetime, timezone
 import mercadopago
+import hmac
+import hashlib
+import logging
 import os
 import urllib.parse
 import requests
@@ -194,6 +197,38 @@ def get_mp_token_for_totem(
             detail=f"Ocurrió un error interno inesperado: {e}"
         )
 
+@app.get("/api/v1/payments/me", response_model=List[schemas.Payment], summary="Obtener mis pagos registrados")
+def read_my_payments(
+    skip: int = 0,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: schemas.Seller = Depends(security.get_current_user)
+):
+    """
+    Devuelve una lista paginada de los pagos registrados para el vendedor
+    actualmente autenticado.
+    """
+    payments = crud.get_payments_by_seller(db, seller_id=current_user.id, skip=skip, limit=limit)
+    return payments
+
+@app.post("/api/v1/events", summary="Registrar eventos de parking desde un Tótem")
+def register_parking_events(
+    events: List[schemas.ParkingEventCreate],
+    db: Session = Depends(get_db),
+    is_validated: bool = Depends(security.validate_totem_api_key)
+):
+    """
+    Endpoint para que los tótems envíen lotes de eventos (entradas/salidas)
+    para ser registrados en la base de datos central del backoffice.
+    """
+    try:
+        crud.create_parking_events(db=db, events=events)
+        return {"status": "ok", "detail": f"{len(events)} events registered."}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to register events: {e}"
+        )
 
 # --- Endpoints de Autenticación ---
 
@@ -337,6 +372,60 @@ def delete_seller_endpoint(
     # if current_user.id == seller_id:
     #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot delete your own account.")
 
+    return crud.delete_seller(db=db, seller_id=seller_id)
+
+
+# --- Endpoints de Administración (Protegidos para rol 'admin') ---
+
+@app.get("/api/v1/admin/sellers", response_model=List[schemas.Seller], summary="[Admin] Obtener todos los vendedores")
+def admin_read_sellers(
+    db: Session = Depends(get_db),
+    admin_user: schemas.Seller = Depends(security.require_admin_user)
+):
+    """
+    Devuelve una lista de todos los vendedores en el sistema.
+    Solo accesible para usuarios con rol 'admin'.
+    """
+    return crud.get_sellers(db)
+
+@app.post("/api/v1/admin/sellers", response_model=schemas.Seller, summary="[Admin] Crear un nuevo vendedor")
+def admin_create_seller(
+    seller: schemas.SellerCreate,
+    db: Session = Depends(get_db),
+    admin_user: schemas.Seller = Depends(security.require_admin_user)
+):
+    """
+    Crea un nuevo vendedor (con rol 'seller' o 'admin').
+    Solo accesible para usuarios con rol 'admin'.
+    """
+    db_seller = crud.get_seller_by_email(db, email=seller.email)
+    if db_seller:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    return crud.create_seller(db=db, seller=seller)
+
+@app.patch("/api/v1/admin/sellers/{seller_id}", response_model=schemas.Seller, summary="[Admin] Actualizar un vendedor")
+def admin_update_seller(
+    seller_id: int,
+    seller_update: schemas.SellerUpdate,
+    db: Session = Depends(get_db),
+    admin_user: schemas.Seller = Depends(security.require_admin_user)
+):
+    """
+    Actualiza los datos de un vendedor específico.
+    Solo accesible para usuarios con rol 'admin'.
+    """
+    return crud.update_seller(db=db, seller_id=seller_id, seller_update=seller_update)
+
+@app.delete("/api/v1/admin/sellers/{seller_id}", response_model=schemas.Seller, summary="[Admin] Eliminar un vendedor")
+def admin_delete_seller(
+    seller_id: int,
+    db: Session = Depends(get_db),
+    admin_user: schemas.Seller = Depends(security.require_admin_user)
+):
+    """
+    Elimina un vendedor del sistema.
+    Solo accesible para usuarios con rol 'admin'.
+    """
     return crud.delete_seller(db=db, seller_id=seller_id)
 
 @app.get("/")
