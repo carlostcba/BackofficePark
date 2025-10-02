@@ -45,7 +45,8 @@ class Totem(BaseModel):
 # Nótese que no incluimos la contraseña por seguridad.
 class Seller(SellerBase):
     id: int
-    mp_access_token: Optional[str] = None # Para verificar el estado de conexión en el frontend
+    mp_access_token: Optional[str] = None
+    mp_refresh_token: Optional[str] = None
     role: str
     created_at: datetime
     updated_at: datetime
