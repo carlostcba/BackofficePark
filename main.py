@@ -135,7 +135,7 @@ def disconnect_mercadopago(
     eliminando sus tokens de la base de datos.
     """
     crud.disconnect_seller_mp(db, seller_id=current_user.id)
-    return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    return {"status": "ok", "detail": "Mercado Pago account disconnected successfully."}
 
 
 # --- Endpoints de Vistas (Frontend) ---
