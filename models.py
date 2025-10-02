@@ -37,9 +37,6 @@ class Payment(Base):
 
     created_at = Column(DateTime, server_default=func.now())
 
-    # Relación con Totems
-    totems = relationship("Totem", back_populates="owner")
-
 
 class Totem(Base):
     __tablename__ = "totems"
