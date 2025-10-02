@@ -378,30 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Listeners para la sección de admin
-        elements.admin.addSellerButton.addEventListener('click', () => sellerModal.open());
-        elements.sellerModal.cancelButton.addEventListener('click', () => sellerModal.close());
-        elements.sellerModal.backdrop.addEventListener('click', () => sellerModal.close());
-        elements.sellerModal.form.addEventListener('submit', handleSellerFormSubmit);
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !elements.sellerModal.element.classList.contains('hidden')) {
-                sellerModal.close();
-            }
-        });
-
-        elements.admin.sellersTableBody.addEventListener('click', (e) => {
-            const editButton = e.target.closest('.edit-seller');
-            const deleteButton = e.target.closest('.delete-seller');
-            if (editButton) {
-                const seller = state.sellers.find(s => s.id == editButton.dataset.id);
-                sellerModal.open(true, seller);
-            }
-            if (deleteButton) {
-                handleDeleteSeller(deleteButton.dataset.id);
-            }
-        });
-
         elements.payments.prevButton.addEventListener('click', () => {
             if (state.payments.currentPage > 1) loadPayments(state.payments.currentPage - 1);
         });
@@ -409,6 +385,39 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.payments.nextButton.addEventListener('click', () => {
             loadPayments(state.payments.currentPage + 1);
         });
+
+        elements.userInfo.disconnectMpButton.addEventListener('click', async () => {
+            if (confirm('¿Estás seguro de que quieres desconectar tu cuenta de Mercado Pago?')) {
+                await apiService('/mercadopago/disconnect');
+                window.location.reload();
+            }
+        });
+
+        // Listeners para la sección de admin (solo si el usuario es admin)
+        if (state.user && state.user.role === 'admin') {
+            elements.admin.addSellerButton.addEventListener('click', () => sellerModal.open());
+            elements.sellerModal.cancelButton.addEventListener('click', () => sellerModal.close());
+            elements.sellerModal.backdrop.addEventListener('click', () => sellerModal.close());
+            elements.sellerModal.form.addEventListener('submit', handleSellerFormSubmit);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !elements.sellerModal.element.classList.contains('hidden')) {
+                    sellerModal.close();
+                }
+            });
+
+            elements.admin.sellersTableBody.addEventListener('click', (e) => {
+                const editButton = e.target.closest('.edit-seller');
+                const deleteButton = e.target.closest('.delete-seller');
+                if (editButton) {
+                    const seller = state.sellers.find(s => s.id == editButton.dataset.id);
+                    sellerModal.open(true, seller);
+                }
+                if (deleteButton) {
+                    handleDeleteSeller(deleteButton.dataset.id);
+                }
+            });
+        }
     }
 
     // --- App Start ---
