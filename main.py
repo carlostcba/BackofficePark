@@ -201,14 +201,23 @@ def get_mp_token_for_totem(
 def read_my_payments(
     skip: int = 0,
     limit: int = 20,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     db: Session = Depends(get_db),
     current_user: schemas.Seller = Depends(security.get_current_user)
 ):
     """
     Devuelve una lista paginada de los pagos registrados para el vendedor
-    actualmente autenticado.
+    actualmente autenticado. Permite filtrar por un rango de fechas.
     """
-    payments = crud.get_payments_by_seller(db, seller_id=current_user.id, skip=skip, limit=limit)
+    payments = crud.get_payments_by_seller(
+        db, 
+        seller_id=current_user.id, 
+        skip=skip, 
+        limit=limit,
+        start_date=start_date,
+        end_date=end_date
+    )
     return payments
 
 @app.post("/api/v1/events", summary="Registrar eventos de parking desde un Tótem")

@@ -138,12 +138,26 @@ def delete_totem(db: Session, totem_id: int):
         db.commit()
     return db_totem
 
-def get_payments_by_seller(db: Session, seller_id: int, skip: int = 0, limit: int = 20):
+def get_payments_by_seller(
+    db: Session, 
+    seller_id: int, 
+    skip: int = 0, 
+    limit: int = 20, 
+    start_date: Optional[datetime] = None, 
+    end_date: Optional[datetime] = None
+):
     """
-    Obtiene los pagos de un vendedor específico, ordenados por fecha descendente.
+    Obtiene los pagos de un vendedor específico, con filtros opcionales de fecha,
+    ordenados por fecha descendente.
     """
-    return db.query(models.Payment)\
-        .filter(models.Payment.seller_id == seller_id)\
+    query = db.query(models.Payment).filter(models.Payment.seller_id == seller_id)
+    if start_date:
+        query = query.filter(models.Payment.payment_time >= start_date)
+    if end_date:
+        # Añadimos un día para que la fecha final sea inclusiva
+        query = query.filter(models.Payment.payment_time < end_date + timedelta(days=1))
+        
+    return query\
         .order_by(models.Payment.payment_time.desc())\
         .offset(skip).limit(limit).all()
 

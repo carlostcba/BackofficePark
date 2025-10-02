@@ -306,11 +306,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function loadPayments(page = 1) {
+    async function loadPayments(page = 1, keepFilters = false) {
         const perPage = state.payments.perPage;
         const skip = (page - 1) * perPage;
+
+        if (!keepFilters) {
+            state.payments.startDate = elements.payments.startDateFilter.value || null;
+            state.payments.endDate = elements.payments.endDateFilter.value || null;
+        }
+
+        let url = `/api/v1/payments/me?skip=${skip}&limit=${perPage}`;
+        if (state.payments.startDate) url += `&start_date=${state.payments.startDate}`;
+        if (state.payments.endDate) url += `&end_date=${state.payments.endDate}`;
+
         try {
-            const paymentsData = await apiService(`/api/v1/payments/me?skip=${skip}&limit=${perPage}`);
+            const paymentsData = await apiService(url);
             state.payments.items = paymentsData;
             state.payments.currentPage = page;
             renderPaymentsTable();
@@ -379,11 +389,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         elements.payments.prevButton.addEventListener('click', () => {
-            if (state.payments.currentPage > 1) loadPayments(state.payments.currentPage - 1);
+            if (state.payments.currentPage > 1) loadPayments(state.payments.currentPage - 1, true);
         });
 
         elements.payments.nextButton.addEventListener('click', () => {
-            loadPayments(state.payments.currentPage + 1);
+            loadPayments(state.payments.currentPage + 1, true);
+        });
+
+        elements.payments.startDateFilter.addEventListener('change', () => {
+            loadPayments(1); // Reinicia a la página 1 al cambiar el filtro
+        });
+
+        elements.payments.endDateFilter.addEventListener('change', () => {
+            loadPayments(1); // Reinicia a la página 1 al cambiar el filtro
         });
 
         elements.userInfo.disconnectMpButton.addEventListener('click', async () => {
