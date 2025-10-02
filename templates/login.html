@@ -52,6 +52,13 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                window.location.href = '/dashboard';
+            }
+        });
+
         document.getElementById('login-form').addEventListener('submit', async function(event) {
             event.preventDefault();
             
