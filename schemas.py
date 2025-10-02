@@ -109,3 +109,19 @@ class ParkingEvent(ParkingEventBase):
 
     class Config:
         from_attributes = True
+
+
+# --- Schemas para Notificaciones de Mercado Pago (IPN) ---
+
+class MercadoPagoNotificationData(BaseModel):
+    id: str
+
+class MercadoPagoNotification(BaseModel):
+    action: str
+    api_version: str
+    data: MercadoPagoNotificationData
+    date_created: datetime
+    id: int
+    live_mode: bool
+    type: str
+    user_id: int
