@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, selectinload
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 import logging
 import mercadopago
 
