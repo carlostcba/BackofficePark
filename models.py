@@ -21,6 +21,9 @@ class Seller(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
+    # Relación con Tótems
+    totems = relationship("Totem", back_populates="owner")
+
 
 class Payment(Base):
     __tablename__ = "payments"
