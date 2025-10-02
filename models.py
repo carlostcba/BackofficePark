@@ -37,6 +37,19 @@ class Payment(Base):
 
     created_at = Column(DateTime, server_default=func.now())
 
+class ParkingEvent(Base):
+    __tablename__ = "parking_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticket_code = Column(String(20), nullable=False, index=True)
+    device_id = Column(Integer, nullable=True)
+    event_type = Column(String(10), nullable=False, index=True)
+    event_time = Column(DateTime, nullable=False)
+    
+    # Timestamps
+    created_at = Column(DateTime, server_default=func.now())
+    sent_to_backoffice_at = Column(DateTime, nullable=True)
+
 
 class Totem(Base):
     __tablename__ = "totems"
