@@ -4,7 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
         token: localStorage.getItem('access_token'),
         user: null,
         totems: [],
-        transactions: [],
+        payments: {
+            items: [],
+            currentPage: 1,
+            perPage: 10,
+            startDate: null,
+            endDate: null,
+        },
+        sellers: [], // For admin users
     };
 
     // --- Constants for Styles ---
@@ -18,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         badge: {
             brand: 'py-1 px-3 text-xs font-bold rounded-full bg-brand text-white',
             neutral: 'py-1 px-3 text-xs font-bold rounded-full bg-medium-gray text-white',
+            success: 'py-1 px-3 text-xs font-bold rounded-full bg-green-600 text-white',
         }
     };
 
@@ -31,15 +39,32 @@ document.addEventListener('DOMContentLoaded', () => {
             mpStatusBadge: document.getElementById('mp-status-badge'),
             connectMpButton: document.getElementById('connect-mp-button'),
             disconnectMpButton: document.getElementById('disconnect-mp-button'),
+            mpTokensContainer: document.getElementById('mp-tokens-container'),
+            mpAccessToken: document.getElementById('mp-access-token'),
+            mpRefreshToken: document.getElementById('mp-refresh-token'),
+            toggleAccessTokenBtn: document.getElementById('toggle-access-token'),
+            toggleRefreshTokenBtn: document.getElementById('toggle-refresh-token'),
         },
         totems: {
             tableBody: document.getElementById('totems-table-body'),
             addTotemButton: document.getElementById('add-totem-button'),
         },
-        transactions: {
-            tableBody: document.getElementById('transactions-table-body'),
+        payments: {
+            tableBody: document.getElementById('payments-table-body'),
+            pagination: document.getElementById('payments-pagination'),
+            prevButton: document.getElementById('payments-prev-button'),
+            nextButton: document.getElementById('payments-next-button'),
+            info: {
+                from: document.getElementById('payments-from'),
+                to: document.getElementById('payments-to'),
+                total: document.getElementById('payments-total'),
+            },
+            startDateFilter: document.getElementById('start-date-filter'),
+            endDateFilter: document.getElementById('end-date-filter'),
+            skeletonRow: document.getElementById('payments-skeleton-row'),
+            emptyState: document.getElementById('payments-empty-state'),
         },
-        modal: {
+        modal: { // totem modal
             element: document.getElementById('totem-modal'),
             backdrop: document.getElementById('modal-backdrop'),
             form: document.getElementById('totem-form'),
@@ -88,11 +113,15 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.userInfo.mpStatusBadge.className = styles.badge.brand;
             elements.userInfo.connectMpButton.classList.add('hidden');
             elements.userInfo.disconnectMpButton.classList.remove('hidden');
+            elements.userInfo.mpTokensContainer.classList.remove('hidden');
+            elements.userInfo.mpAccessToken.value = state.user.mp_access_token;
+            elements.userInfo.mpRefreshToken.value = state.user.mp_refresh_token;
         } else {
             elements.userInfo.mpStatusBadge.textContent = 'No Conectado';
             elements.userInfo.mpStatusBadge.className = styles.badge.neutral;
             elements.userInfo.connectMpButton.classList.remove('hidden');
             elements.userInfo.disconnectMpButton.classList.add('hidden');
+            elements.userInfo.mpTokensContainer.classList.add('hidden');
         }
     }
 
@@ -132,19 +161,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderPaymentsTable = () => {
         const { items, currentPage, perPage } = state.payments;
         const tableBody = elements.payments.tableBody;
-        const skeletonRow = document.getElementById('payments-skeleton-row');
-        const emptyState = document.getElementById('payments-empty-state');
-        const pagination = elements.payments.pagination;
-
+        
         tableBody.querySelectorAll('tr:not(#payments-skeleton-row):not(#payments-empty-state)').forEach(row => row.remove());
 
         if (items && items.length > 0) {
-            pagination.classList.remove('hidden');
-            emptyState.classList.add('hidden');
+            elements.payments.pagination.classList.remove('hidden');
+            elements.payments.emptyState.classList.add('hidden');
             items.forEach(payment => {
                 const statusBadge = payment.status === 'approved' 
-                    ? `<span class="badge ${styles.badge.success}">Aprobado</span>`
-                    : `<span class="badge ${styles.badge.neutral}">${payment.status}</span>`;
+                    ? `<span class="py-1 px-3 text-xs font-bold rounded-full bg-green-100 text-green-800">Aprobado</span>`
+                    : `<span class="py-1 px-3 text-xs font-bold rounded-full bg-gray-100 text-gray-800">${payment.status}</span>`;
 
                 const row = `
                     <tr class="hover:bg-gray-50">
@@ -158,55 +184,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableBody.insertAdjacentHTML('beforeend', row);
             });
 
-            // Actualizar info de paginación
             const from = (currentPage - 1) * perPage + 1;
             const to = from + items.length - 1;
             elements.payments.info.from.textContent = from;
             elements.payments.info.to.textContent = to;
-            // No tenemos el total, así que lo ocultamos por ahora
-            // elements.payments.info.total.textContent = total; 
-
+            
             elements.payments.prevButton.disabled = currentPage === 1;
             elements.payments.nextButton.disabled = items.length < perPage;
 
-        } else if (currentPage === 1) { // Solo mostrar estado vacío en la primera página
-            pagination.classList.add('hidden');
-            emptyState.classList.remove('hidden');
+        } else if (currentPage === 1) {
+            elements.payments.pagination.classList.add('hidden');
+            elements.payments.emptyState.classList.remove('hidden');
         }
 
-        skeletonRow.classList.add('hidden');
+        elements.payments.skeletonRow.classList.add('hidden');
     }
-
-    const renderSellersTable = () => {
-        const tableBody = elements.admin.sellersTableBody;
-        const skeleton = elements.admin.sellersSkeleton;
-        tableBody.innerHTML = ''; // Limpiar
-        tableBody.appendChild(skeleton);
-
-        if (state.sellers.length > 0) {
-            state.sellers.forEach(seller => {
-                const row = `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">${seller.name}</div>
-                            <div class="text-xs text-gray-500">${seller.id === state.user.id ? '(Tú)' : ''}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${seller.email}</td>
-                        <td class="px-6 py-4 whitespace-nowrap"><span class="badge ${seller.role === 'admin' ? styles.badge.brand : styles.badge.neutral}">${seller.role}</span></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${seller.totems.length}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                            <button class="btn btn--secondary btn--sm edit-seller" data-id="${seller.id}">Editar</button>
-                            <button class="btn btn--danger btn--sm delete-seller" data-id="${seller.id}" ${seller.id === state.user.id ? 'disabled' : ''}>Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.insertAdjacentHTML('beforeend', row);
-            });
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10">No hay otros vendedores registrados.</td></tr>`;
-        }
-        skeleton.classList.add('hidden');
-    };
 
     // --- Components ---
     function showToast(message, type = 'success') {
@@ -244,30 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const sellerModal = {
-        open(isEdit = false, seller = null) {
-            elements.sellerModal.form.reset();
-            elements.sellerModal.idInput.value = '';
-            elements.sellerModal.passwordInput.placeholder = isEdit ? 'Dejar en blanco para no cambiar' : 'Requerido';
-            elements.sellerModal.passwordInput.required = !isEdit;
-
-            if (isEdit && seller) {
-                elements.sellerModal.title.textContent = 'Editar Vendedor';
-                elements.sellerModal.idInput.value = seller.id;
-                elements.sellerModal.nameInput.value = seller.name;
-                elements.sellerModal.emailInput.value = seller.email;
-                elements.sellerModal.roleInput.value = seller.role;
-            } else {
-                elements.sellerModal.title.textContent = 'Añadir Nuevo Vendedor';
-            }
-            elements.sellerModal.element.classList.remove('hidden');
-            elements.sellerModal.nameInput.focus();
-        },
-        close() {
-            elements.sellerModal.element.classList.add('hidden');
-        }
-    };
-
     // --- Event Handlers ---
     async function handleTotemFormSubmit(event) {
         event.preventDefault();
@@ -276,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             external_pos_id: elements.modal.externalPosIdInput.value,
             location: elements.modal.locationInput.value,
             is_active: elements.modal.isActiveInput.checked,
-            owner_id: state.user.id // Crucial for creation
+            owner_id: state.user.id
         };
 
         try {
@@ -288,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Tótem creado con éxito.');
             }
             totemModal.close();
-            await loadInitialData(); // Recargar todo
+            await loadInitialData(true); // Recargar solo tótems
         } catch (error) {
             // El error ya se muestra en el toast del apiService
         }
@@ -299,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await apiService(`/totems/${totemId}`, 'DELETE');
                 showToast('Tótem eliminado con éxito.');
-                await loadInitialData();
+                await loadInitialData(true);
             } catch (error) {
                 // El error ya se muestra en el toast del apiService
             }
@@ -330,13 +298,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Initialization ---
-    async function loadInitialData() {
+    async function loadInitialData(onlyTotems = false) {
         try {
-            state.user = await apiService('/sellers/me');
-            state.totems = state.user.totems || [];
-            renderUserInfo();
+            if (!onlyTotems) {
+                state.user = await apiService('/sellers/me');
+                renderUserInfo();
+                await loadPayments(); // Carga inicial de pagos
+            }
+            // Totems are part of the user object, so we need to fetch the user again or have a separate endpoint
+            const userWithTotems = await apiService('/sellers/me');
+            state.user = userWithTotems;
+            state.totems = userWithTotems.totems || [];
             renderTotemsTable();
-            await loadPayments(); // Carga inicial de pagos
         } catch (error) {
             console.error('Fallo crítico al cargar los datos iniciales.');
         }
@@ -363,6 +336,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Failed to get Mercado Pago authorization URL", error);
             }
         });
+        
+        elements.userInfo.disconnectMpButton.addEventListener('click', async () => {
+            if (confirm('¿Estás seguro de que quieres desconectar tu cuenta de Mercado Pago?')) {
+                try {
+                    await apiService('/mercadopago/disconnect', 'GET'); // Should be GET or POST as per API
+                    showToast('Cuenta de Mercado Pago desconectada.');
+                    // Optimistically update UI
+                    state.user.mp_access_token = null;
+                    renderUserInfo();
+                    // Or reload the page
+                    // window.location.reload();
+                } catch(error) {
+                    // Toast is already shown by apiService
+                }
+            }
+        });
+
+        elements.userInfo.toggleAccessTokenBtn.addEventListener('click', () => {
+            const input = elements.userInfo.mpAccessToken;
+            const button = elements.userInfo.toggleAccessTokenBtn;
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = 'Ocultar';
+            } else {
+                input.type = 'password';
+                button.textContent = 'Mostrar';
+            }
+        });
+
+        elements.userInfo.toggleRefreshTokenBtn.addEventListener('click', () => {
+            const input = elements.userInfo.mpRefreshToken;
+            const button = elements.userInfo.toggleRefreshTokenBtn;
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = 'Ocultar';
+            } else {
+                input.type = 'password';
+                button.textContent = 'Mostrar';
+            }
+        });
 
         elements.totems.addTotemButton.addEventListener('click', () => totemModal.open());
         elements.modal.cancelButton.addEventListener('click', () => totemModal.close());
@@ -375,7 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Delegación de eventos para botones de la tabla
         elements.totems.tableBody.addEventListener('click', async (e) => {
             const editButton = e.target.closest('.edit-totem');
             const deleteButton = e.target.closest('.delete-totem');
@@ -403,42 +415,17 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.payments.endDateFilter.addEventListener('change', () => {
             loadPayments(1); // Reinicia a la página 1 al cambiar el filtro
         });
-
-        elements.userInfo.disconnectMpButton.addEventListener('click', async () => {
-            if (confirm('¿Estás seguro de que quieres desconectar tu cuenta de Mercado Pago?')) {
-                await apiService('/mercadopago/disconnect');
-                window.location.reload();
-            }
-        });
-
-        // Listeners para la sección de admin (solo si el usuario es admin)
-        if (state.user && state.user.role === 'admin') {
-            elements.admin.addSellerButton.addEventListener('click', () => sellerModal.open());
-            elements.sellerModal.cancelButton.addEventListener('click', () => sellerModal.close());
-            elements.sellerModal.backdrop.addEventListener('click', () => sellerModal.close());
-            elements.sellerModal.form.addEventListener('submit', handleSellerFormSubmit);
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !elements.sellerModal.element.classList.contains('hidden')) {
-                    sellerModal.close();
-                }
-            });
-
-            elements.admin.sellersTableBody.addEventListener('click', (e) => {
-                const editButton = e.target.closest('.edit-seller');
-                const deleteButton = e.target.closest('.delete-seller');
-                if (editButton) {
-                    const seller = state.sellers.find(s => s.id == editButton.dataset.id);
-                    sellerModal.open(true, seller);
-                }
-                if (deleteButton) {
-                    handleDeleteSeller(deleteButton.dataset.id);
-                }
-            });
-        }
     }
 
     // --- App Start ---
-    loadInitialData();
-    setupEventListeners();
+    async function startApp() {
+        if (!state.token) {
+            window.location.href = '/';
+            return;
+        }
+        await loadInitialData();
+        setupEventListeners();
+    }
+
+    startApp();
 });

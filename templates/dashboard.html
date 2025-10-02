@@ -60,6 +60,18 @@
                     <button id="connect-mp-button" class="btn btn--primary hidden">Conectar con Mercado Pago</button> 
                     <button id="disconnect-mp-button" class="btn btn--danger hidden">Desconectar</button> 
                 </div>
+                <div id="mp-tokens-container" class="mt-4 space-y-2 hidden">
+                    <div class="flex items-center gap-2">
+                        <label for="mp-access-token" class="text-sm font-medium text-dark w-32">Access Token:</label>
+                        <input type="password" id="mp-access-token" readonly class="flex-1 bg-neutral-100 border border-neutral-300 rounded-md shadow-sm py-1 px-2 text-sm">
+                        <button id="toggle-access-token" class="btn btn--secondary btn--sm">Mostrar</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="mp-refresh-token" class="text-sm font-medium text-dark w-32">Refresh Token:</label>
+                        <input type="password" id="mp-refresh-token" readonly class="flex-1 bg-neutral-100 border border-neutral-300 rounded-md shadow-sm py-1 px-2 text-sm">
+                        <button id="toggle-refresh-token" class="btn btn--secondary btn--sm">Mostrar</button>
+                    </div>
+                </div>
             </div>
         </section>
 
