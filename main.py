@@ -15,9 +15,12 @@ import os
 import urllib.parse
 import requests
 
-from . import crud, models, schemas, security
-from .database import SessionLocal, engine
-from .settings import settings
+import crud
+import models
+import schemas
+import security
+from database import SessionLocal, engine
+from settings import settings
 
 # --- Constantes ---
 # Un token de MP dura 6 horas (21600 segundos). Lo refrescamos proactivamente.
