@@ -47,7 +47,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 # --- Dependencias de Seguridad ---
 
-async async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.Seller:
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.Seller:
     """
     Dependencia para obtener el VENDEDOR actual a partir de un token JWT.
     Se usa para proteger los endpoints del dashboard.
