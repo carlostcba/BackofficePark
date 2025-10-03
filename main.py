@@ -15,9 +15,9 @@ import os
 import urllib.parse
 import requests
 
-import crud, models, schemas, security
-from database import SessionLocal, engine
-from settings import settings
+from . import crud, models, schemas, security
+from .database import SessionLocal, engine
+from .settings import settings
 
 # --- Constantes ---
 # Un token de MP dura 6 horas (21600 segundos). Lo refrescamos proactivamente.
@@ -138,10 +138,35 @@ def disconnect_mercadopago(
     return {"status": "ok", "detail": "Mercado Pago account disconnected successfully."}
 
 
+# --- Endpoint de Notificaciones de Mercado Pago (IPN/Webhook) ---
+
+@app.post("/mercadopago/webhook", status_code=status.HTTP_200_OK, summary="Receptor de Webhooks de Mercado Pago")
+async def mercadopago_webhook(
+    notification: schemas.MercadoPagoNotification,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Recibe notificaciones de eventos de Mercado Pago (ej. pagos).
+    Responde inmediatamente con un 200 OK y procesa el pago en segundo plano.
+    """
+    logging.info(f"--- WEBHOOK MERCADOPAGO RECIBIDO ---")
+    logging.info(f"Action: {notification.action}, Type: {notification.type}, Data ID: {notification.data.id}")
+
+    if notification.type == "payment":
+        payment_id = notification.data.id
+        # Añadimos la tarea para que se ejecute en segundo plano
+        background_tasks.add_task(crud.process_payment_notification, db=db, payment_id=payment_id)
+        logging.info(f"Tarea de procesamiento para el pago {payment_id} encolada.")
+    
+    return {"status": "notification received"}
+
 # --- Endpoints de Vistas (Frontend) ---
 
 @app.get("/", summary="Página de Login")
-def view_login(request: Request):
+def view_login(request: Request, current_user: schemas.Seller = Depends(security.get_optional_current_user)):
+    if current_user:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/dashboard", summary="Dashboard Principal")
@@ -436,7 +461,3 @@ def admin_delete_seller(
     Solo accesible para usuarios con rol 'admin'.
     """
     return crud.delete_seller(db=db, seller_id=seller_id)
-
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido a la API del Back Office de OEM Totem Park"}

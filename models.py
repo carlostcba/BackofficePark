@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean, Float
 from sqlalchemy.orm import relationship
 
-from database import Base
+from .database import Base
 
 class Seller(Base):
     __tablename__ = "sellers"

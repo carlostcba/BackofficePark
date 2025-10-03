@@ -5,9 +5,9 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import schemas, crud
-from database import SessionLocal
-from settings import settings
+from . import schemas, crud
+from .database import SessionLocal
+from .settings import settings
 
 # --- Configuración de Seguridad ---
 
@@ -46,7 +46,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 # --- Dependencias de Seguridad ---
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.Seller:
+async async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.Seller:
     """
     Dependencia para obtener el VENDEDOR actual a partir de un token JWT.
     Se usa para proteger los endpoints del dashboard.
@@ -70,6 +70,28 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.Selle
         user = crud.get_seller_by_email(db, email=token_data.email)
         if user is None:
             raise credentials_exception
+        return user
+    finally:
+        db.close()
+
+async def get_optional_current_user(token: str = Depends(oauth2_scheme)) -> Optional[schemas.Seller]:
+    """
+    Dependencia para obtener opcionalmente el VENDEDOR actual a partir de un token JWT.
+    Si el token no es válido o no se provee, devuelve None en lugar de lanzar un error.
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+        token_data = schemas.TokenData(email=email)
+    except (JWTError, AttributeError):
+        # Si el token no existe (AttributeError) o es inválido (JWTError), no hay usuario.
+        return None
+    
+    db = SessionLocal()
+    try:
+        user = crud.get_seller_by_email(db, email=token_data.email)
         return user
     finally:
         db.close()
