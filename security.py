@@ -16,7 +16,9 @@ from settings import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Esquema de autenticación OAuth2 para Vendedores (Dashboard)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# auto_error=False hace que el Dependency devuelva None si no hay token, en lugar de un error 401.
+# Esto nos permite tener endpoints verdaderamente opcionales.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 # Esquema de autenticación por API Key para Tótems
 api_key_header_scheme = APIKeyHeader(name="X-API-Key")
@@ -47,16 +49,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 # --- Dependencias de Seguridad ---
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.Seller:
+async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> schemas.Seller:
     """
     Dependencia para obtener el VENDEDOR actual a partir de un token JWT.
     Se usa para proteger los endpoints del dashboard.
+    Si el token no existe o es inválido, lanza una excepción HTTP 401.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if token is None:
+        raise credentials_exception
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
@@ -75,20 +80,22 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> schemas.Selle
     finally:
         db.close()
 
-async def get_optional_current_user(token: str = Depends(oauth2_scheme)) -> Optional[schemas.Seller]:
+async def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[schemas.Seller]:
     """
     Dependencia para obtener opcionalmente el VENDEDOR actual a partir de un token JWT.
     Si el token no es válido o no se provee, devuelve None en lugar de lanzar un error.
+    Ideal para páginas públicas que cambian si el usuario está logueado (ej. el login).
     """
+    if token is None:
+        return None
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             return None
         token_data = schemas.TokenData(email=email)
-    except (JWTError, AttributeError):
-        # Si el token no existe (AttributeError) o es inválido (JWTError), no hay usuario.
-        return None
+    except JWTError:
+        return None # Token inválido (expirado, malformado, etc.)
     
     db = SessionLocal()
     try:
